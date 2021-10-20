@@ -1,0 +1,22 @@
+#! /usr/bin/env python3
+
+import rospy
+from sensor_msgs.msg import LaserScan
+
+# BEGIN MEASUREMENT 
+def scan_callback(msg):
+    range_center = msg.ranges[int(len(msg.ranges)/2)]
+    range_left = msg.ranges[int(len(msg.ranges)-1)]
+    range_right = msg.ranges[0]
+    print("range ahead: left - %0.1f" %range_left, " center- %0.1f" %range_center, " right - %0.1f" %range_right)
+    print(len(msg.ranges))
+    file1 = open("/home/chen2156/laserData/src/laser_values/src/laserDataCaputer.txt","a")
+
+    str1 = "range ahead: left - {:0.01f} center- {:0.01f} right - {:0.01f}\n".format(range_left, range_center, range_right)
+    file1.write(str1)
+    file1.close()
+#END MEASUREMENT
+
+rospy.init_node('range_ahead')
+scan_sub = rospy.Subscriber('scan', LaserScan, scan_callback)
+rospy.spin()
