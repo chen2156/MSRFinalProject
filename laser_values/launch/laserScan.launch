@@ -6,5 +6,4 @@
     </include>
     <node pkg="laser_values" type="laserDataScript" name="scan_values" output="screen"> 
     </node>
-
 </launch>
