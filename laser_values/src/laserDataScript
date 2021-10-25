@@ -9,14 +9,19 @@ fig, ax = plt.subplots(1, 1, figsize=(4, 4), tight_layout=True)
 
 # BEGIN MEASUREMENT 
 def scan_callback(msg):
-    range_center = msg.ranges[int(len(msg.ranges)/2)]
-    range_left = msg.ranges[90]
-    range_right = msg.ranges[270]
+    #range_center = msg.ranges[int(len(msg.ranges)/2)]
+    #range_left = msg.ranges[90]
+    #range_right = msg.ranges[270]
 
     r_list = np.array(msg.ranges)
     th_list = np.linspace(-np.pi, np.pi, 360)
     xlist = r_list * np.cos(th_list)
     ylist = r_list * np.sin(th_list)
+
+    strRange = [str(x) for x in msg.ranges]
+
+    rangeStr = ",".join(strRange) + "\n"
+
 
     ax.cla()
     ax.plot(xlist, ylist, linestyle='', marker='o', color='red')
@@ -25,11 +30,11 @@ def scan_callback(msg):
 
     # print("range ahead: left - %.6f" %range_left, " center- %.6f" %range_center, " right - %.6f" %range_right)
     # print(len(msg.ranges))
-    # file1 = open("/home/chen2156/laserData/src/laser_values/src/laserDataCaputer.txt","a")
+    file1 = open("/home/chen2156/laserData/src/laser_values/src/laserDataCaputer.txt","a")
 
     # str1 = "range ahead: left - {:.6f} center- {:.6f} right - {:.6f}\n".format(range_left, range_center, range_right)
-    # file1.write(str1)
-    # file1.close()
+    file1.write(rangeStr)
+    file1.close()
 #END MEASUREMENT
 
 rospy.init_node('range_ahead')

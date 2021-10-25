@@ -97,8 +97,9 @@ def unwrapImage(filePath):
     cv2.imshow("output", newUnwarpImage)
     cv2.waitKey(0)
 
+    cv2.imwrite("/home/chen2156/laserData/src/laser_values/src/datapoint3/unwarpedImage.png", newUnwarpImage)
 
-
+    
 
 
 
@@ -111,5 +112,5 @@ def unwrapImage(filePath):
 
 
 if __name__ == "__main__":
-    filename = "/home/chen2156/image.png"
+    filename = "/home/chen2156/laserData/src/laser_values/src/datapoint3/image.png"
     unwrapImage(filename)
