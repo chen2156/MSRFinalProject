@@ -1,84 +1,169 @@
 import numpy as np
 import cv2
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from scipy.stats import stats
+import matplotlib.image as mpimg
+from glob import iglob
 
-def PCA(filepath):
-    image = cv2.imread(filepath)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-
-    #Standardize/Normalize the image
-
-    H = image[:, :, 0]
-    S = image[:, :, 1]
-    V = image[:, :, 2]
-
-    meanH = H.mean()
-    stdH = H.std()
-
-    meanS = S.mean()
-    stdS = S.std()
-
-    meanV = V.mean()
-    stdV = V.std()
-
-    normH = (H - meanH) / stdH 
-    normS = (S - meanS) / stdS
-    normV = (V - meanV) / stdV
-
-    #Compute covariance Matrix
-    reshapeH = normH.flatten()
-    reshapeS = normS.flatten()
-    reshapeV = normV.flatten()
-
-    mat = np.vstack((reshapeH, reshapeS, reshapeV))
-    covMatrix = np.cov(mat)
-
-    #Compute Eigenvalues and Eigenvectors
-
-    eigVal, eigVec = np.linalg.eig(covMatrix)
-    print(eigVec)
-
-    #Rank eigenvectors based on eigenvalues's value
-
-    minIndex = np.argmin(eigVal)
-    maxIndex = np.argmax(eigVal)
-    midIndex = np.where(eigVal == np.median(eigVal))
-    midIndex = midIndex[0][0]
-
-    print(minIndex, midIndex, maxIndex)
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 
 
-    minEigenVector = eigVec[minIndex]
-    midEigenVector = eigVec[midIndex]
-    maxEigenVector = eigVec[maxIndex]
+def PCAImageCompression(imageFile):
+    image = cv2.cvtColor(cv2.imread(imageFile), cv2.COLOR_BGR2HSV)
+    H, S, V = cv2.split(image)
 
-    percentMaxEig = eigVal[maxIndex] / sum(eigVal)
-    percentMidEig = eigVal[midIndex] / sum(eigVal)
-    percentMinEig = eigVal[minIndex] / sum(eigVal)
+    pca = PCA(6)
+    hTransformed = pca.fit_transform(H)
+    hInverted = pca.inverse_transform(hTransformed)
 
-    print(percentMaxEig)
-    print(percentMidEig)
-    print(percentMinEig)
+    sTransformed = pca.fit_transform(S)
+    sInverted = pca.inverse_transform(sTransformed)
 
-    #Create Feature Vector
+    vTransformed = pca.fit_transform(V)
+    vInverted = pca.inverse_transform(vTransformed)
 
-    FeatureVector = np.column_stack((eigVec[0], eigVec[1], eigVec[2]))
+    imageCompressed = (np.dstack((hInverted, sInverted, vInverted))).astype(np.uint8)
 
-    print(FeatureVector)
+    return imageCompressed
 
-    #Recast data along the PCA
+def PCAImagesCompression(fileDirectory):
+    flattenArraysH = pd.DataFrame([])
+    flattenArraysS = pd.DataFrame([])
+    flattenArraysV = pd.DataFrame([])
+    listing = os.listdir(fileDirectory)  
+    for file in listing:
+        image = cv2.imread(fileDirectory + file)
+        print(image.shape)
+        resized = cv2.resize(image, (688, 219), interpolation=cv2.INTER_LINEAR)
+        resized = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+        print(resized.shape)
+        print(resized.size)
 
-    FinalDataset = FeatureVector.T * image.T
+        H, S, V = cv2.split(resized)
 
-    return FinalDataset
+        print(H.shape)
+        print(S.shape)
+        print(V.shape)
+
+        scaledH = H / 180
+        scaledS = S / 255
+        scaledV = V / 255
+        
+        dfH = pd.Series(scaledH.flatten(), name=file)
+        flattenArraysH = flattenArraysH.append(dfH)
+        dfS = pd.Series(scaledS.flatten(), name=file)
+        flattenArraysS =flattenArraysS.append(dfS)
+        dfV = pd.Series(scaledV.flatten(), name=file)
+        flattenArraysV = flattenArraysV.append(dfV)
+
+
+    #print(flattenArraysH)
+    #print(flattenArraysS)
+    #print(flattenArraysV)
+
+    pcaH = PCA(n_components=6)
+    pcaH.fit(flattenArraysH)
+    
+
+    pcaS = PCA(n_components=6)
+    pcaS.fit(flattenArraysS)
+
+    pcaV = PCA(n_components=6)
+    pcaV.fit(flattenArraysV)
 
 
 
+    transPCAH = pcaH.transform(flattenArraysH)
+    transPCAS = pcaS.transform(flattenArraysS)
+    transPCAV = pcaV.transform(flattenArraysV)
 
+    print(transPCAH.shape)
+    print(transPCAS.shape)
+    print(transPCAV.shape)
+
+    print(f"Hue Channel : {sum(pcaH.explained_variance_ratio_)}")
+    print(f"Saturation Channel: {sum(pcaS.explained_variance_ratio_)}")
+    print(f"Variation Channel  : {sum(pcaV.explained_variance_ratio_)}")
+
+    projectH = pcaH.inverse_transform(transPCAH)
+    projectS = pcaS.inverse_transform(transPCAS)
+    projectV = pcaV.inverse_transform(transPCAV)
+
+    return projectH, projectS, projectV, sum(pcaH.explained_variance_ratio_), sum(pcaS.explained_variance_ratio_), sum(pcaV.explained_variance_ratio_)
 
 
 
 if __name__ == "__main__":
-    filename = "/home/chen2156/laserData/src/laser_values/src/datapoint3/image.png"
-    res = PCA(filename)
-    print(res)
+
+    
+
+    #compressedImage = PCAImageCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/frame0007Unwarped.jpg")
+    #out = cv2.cvtColor(compressedImage, cv2.COLOR_HSV2BGR)
+
+    #cv2.imshow("output", out)
+    #cv2.waitKey(0)
+
+    projH, projS, projV, varH, varS, varV = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/")
+
+    hsv_image = cv2.merge([projH, projS, projV])
+
+    print(projH[0].shape)
+    print(projS[0].shape)
+    print(projV[0].shape)
+
+    H = projH[0].reshape(219, 688)
+    S = projS[0].reshape(219, 688)
+    V = projV[0].reshape(219, 688)
+
+    hsvImage = cv2.merge([H, S, V])
+    print(hsvImage.shape)
+    listing = os.listdir("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/")  
+    origImage = cv2.imread("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/" + listing[0], cv2.COLOR_BGR2HSV)
+
+    fig = plt.figure(figsize = (10, 7.2)) 
+    fig.add_subplot(121)
+    plt.title("Original Image")
+    plt.imshow(origImage)
+    fig.add_subplot(122)
+    plt.title("Reduced Image")
+    plt.imshow(hsvImage)
+    plt.show()
+
+    #out = cv2.cvtColor(hsvImage.astype('float32'), cv2.COLOR_HSV2BGR)
+
+    #cv2.imshow('example', out)
+    #cv2.waitKey()
+
+
+
+    #print(hsv_image.shape)
+
+    
+    kernel = C(1.0, (1e-3, 1e3)) * RBF([5,5], (1e-2, 1e2))
+    
+
+    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15)
+
+    f = open("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.txt", "r")
+    
+    line = f.readline()
+
+    y  = line.split(",")
+    y = list(map(float, y))
+    if max([varH, varS, varV]) == varH:
+        X = projH
+    elif max([varH, varS, varV]) == varS:
+        X = projS
+    else:
+        X = projV        
+    gp.fit(X, y)
+    y_pred, MSE = gp.predict(x, return_std=True)
+    
+    
+    
+    
+
