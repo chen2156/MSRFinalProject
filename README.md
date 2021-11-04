@@ -7,7 +7,7 @@ Goal of this paper is to be able to tell the distance of level objects from robo
 
 This method involves implementing the Gaussian Process Algorithm
 
-[logo]: 20211104_112847.jpg
+![Alt Text](Path_to_image)
 <h1> Steps Taken to do the project</h1>
 
 Hardware Setup:
