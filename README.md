@@ -24,10 +24,10 @@ Raspberry Pi camera
 To build the robot, disassembled the top layer, including the LIDAR, place the Raspberry Pi camera on the second top layer such that it is centered on the robot.  Camera mount was 3D printed.  Move the USB2LDS board to the same layer as camera.  Assemble the waffle plate and attach the convex mirror to the bottom of it.  Plug Raspberry pi camera into the raspberry pi board 
 
 <h3>Testing the camera</h3>
-Turn on the raspberry pi camera by ssh into the robot.  After I sshed into the robot:
+Turn on the raspberry pi camera by ssh into the robot.  After I sshed into the robot:  
 ```
 rosrun usb_cam usb_cam_node _pixel_format:=yuyv
-```
+```  
 In another tab I ran `rqt_image_view` to check if the camera was working.  The camera should publish to `/usb_cam/image_view` topic.  
 
 <h3>Finish Assembly</h3>
