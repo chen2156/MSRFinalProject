@@ -25,15 +25,16 @@ To build the robot, disassembled the top layer, including the LIDAR, place the R
 
 <h3>Testing the camera</h3>
 Turn on the raspberry pi camera by ssh into the robot.  After I sshed into the robot:  
-```
-rosrun usb_cam usb_cam_node _pixel_format:=yuyv
-```  
+
+ `rosrun usb_cam usb_cam_node _pixel_format:=yuyv` 
+
 In another tab I ran `rqt_image_view` to check if the camera was working.  The camera should publish to `/usb_cam/image_view` topic.  
 
 <h3>Finish Assembly</h3>
 After checking that the camera works.  Add spacers and calibrate the camera such that the camera can clearly film the mirror's reflection of the robot's surrounding clearly  Reassemble the LIDAR system back to the robot.  The data generated from the LIDAR system will be used as the ground truth camera
 
-<h3>Capure a dataset of images</h3>
+<h3>Capure a dataset of images</h3>  
+
 After system is set up, record a bag file of the camera 
 
 `rosbag record -O subset /usb_cam/image_view`
