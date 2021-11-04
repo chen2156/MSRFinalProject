@@ -65,7 +65,8 @@ def unwrapImage(filePath):
 
     #UnWarp the image
     newHeight = round(radius)
-    newWidth = int(round(2.0 * (radius / 2) * np.pi))
+    newWidth = int(round(2 * np.pi * radius))
+    #newWidth = int(round(2.0 * (radius / 2) * np.pi))
     print(newWidth)
     print(type(newWidth))
     map_x = np.zeros((newHeight, newWidth), np.float32)
@@ -174,7 +175,8 @@ def unwrapImages(fileDir1, fileDir2):
        
         #UnWarp the image
         newHeight = round(radius)
-        newWidth = int(round(2.0 * (radius / 2) * np.pi))
+        newWidth = int(round(2.0 * np.pi * radius))
+        #newWidth = int(round(2.0 * (radius / 2) * np.pi))
         #print(newWidth)
         #print(type(newWidth))
         map_x = np.zeros((newHeight, newWidth), np.float32)
