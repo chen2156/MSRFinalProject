@@ -35,7 +35,7 @@ def scan_callback(msg):
     # str1 = "range ahead: left - {:.6f} center- {:.6f} right - {:.6f}\n".format(range_left, range_center, range_right)
     file1.write(rangeStr)
     file1.close()
-#END MEASUREMENT
+#END MEASUREMENT  
 
 rospy.init_node('range_ahead')
 scan_sub = rospy.Subscriber('scan', LaserScan, scan_callback)

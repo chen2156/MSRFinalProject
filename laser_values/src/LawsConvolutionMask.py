@@ -25,7 +25,6 @@ def LawsConvo(filename, lightMapDamping):
     cv2.waitKey(0)
     
 
-    print(image)    
 
     L3 = np.array([1, 2, 1]).T
     E3 = np.array([-1, 0, 1]).T
