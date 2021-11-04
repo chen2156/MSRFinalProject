@@ -48,7 +48,7 @@ Example of image generated:
 
 ![Alt Text](20211104_154218.jpg)  
 
-As sbown in the image, to unwarp the image, I used the OpenCV library to detect the circle of the image.  I then isolated that region and used OpenCV to determine the radius and the center of the circle.  From there, I created a R by 2\piR, where R being the radius of the circle.  I then mapped each coordinate to each pixel value of the circle, resulting in the image shown  
+As sbown in the image, to unwarp the image, I used the OpenCV library to detect the circle of the image.  I then isolated that region and used OpenCV to determine the radius and the center of the circle.  From there, I created a R by 2 $\pi$ R, where R being the radius of the circle.  I then mapped each coordinate to each pixel value of the circle, resulting in the image shown  
 
 
 ![Alt Text](laser_values/src/multipleImages/unWarpedImages/frame0000Unwarped.jpg)  
