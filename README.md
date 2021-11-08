@@ -15,7 +15,7 @@ This method involves implementing the Gaussian Process Algorithm
 Turtlebot3  
 [additional waffle plate](https://www.robotis.us/tb3-waffle-plate-ipl-01-8ea/)  
 [M2 screws](https://www.amazon.com/HanTof-Washers-Assortment-Machine-Stainless/dp/B082XRX17Z/ref=asc_df_B082XRX17Z/?tag=hyprod-20&linkCode=df0&hvadid=416774286618&hvpos=&hvnetw=g&hvrand=16898008894177674308&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9021564&hvtargid=pla-901437054371&psc=1&tag=&ref=&adgrpid=95471660538&hvpone=&hvptwo=&hvadid=416774286618&hvpos=&hvnetw=g&hvrand=16898008894177674308&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=9021564&hvtargid=pla-901437054371)  
-[convex mirror](https://www.edmundoptics.com/p/50mm-dia-x25mm-fl-enhanced-aluminum-convex-mirror-/29998/)
+[convex mirror](https://www.edmundoptics.com/p/50mm-dia-x25mm-fl-enhanced-aluminum-convex-mirror-/29998/)  
 [M3 Standoffs](https://www.amazon.com/Csdtylh-Male-Female-Standoff-Stainless-Assortment/dp/B06Y5TJXY1/ref=sr_1_4?crid=1EYKXSMDMV6A7&dchild=1&keywords=m3+standoff+assortment&qid=1634152182&sprefix=m3+standoff+assortment%2Caps%2C443&sr=8-4)  
 Raspberry Pi camera  
 [3D printed camera mount](raspberreypi_cameraholder.stl)
@@ -57,7 +57,9 @@ As sbown in the image, to unwarp the image, I used the OpenCV library to detect 
 
 To apply the PCA on the HSV image, I first split the images into its three seperate components.  I then normalized them by dividing the Hue channel by 180, the saturation channel by 255, and the value channel by 255 since H had a range of (0, 180), S had a range of (0, 255), and V had a range of (0, 255).  I then stored them as Series and appended to their respected pandas Dataframes.  I then called create a 6 component PCA using scikitlearn's PCA function, and fitted it to the respective PCAs.  I then called the transform function to get the resulting PCA matrix
 
-<h3>Applying Gaussian Process on the image</h3> 
+<h3>Applying Gaussian Process on the image</h3>  
+
+Since the environment is a static enviroment, I would first pick one of the PCA-reduced images in the dataset.  I would then reduce the width of the image down to 360 pixels.  I would then set that as X.  The observed data is the data coming from the LIDAR, which is set to y.  Then, I would then have x be the indexes from 0 to 360 degree and run the functions of scikit-learn on the inputs and plot the results
 
 
 
