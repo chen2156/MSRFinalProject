@@ -7,9 +7,13 @@ from sklearn.decomposition import PCA
 from scipy.stats import stats
 import matplotlib.image as mpimg
 from glob import iglob
+import random
 
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.gaussian_process.kernels import _check_length_scale
+from sklearn import preprocessing
+
 
 
 def PCAImageCompression(imageFile):
@@ -31,17 +35,17 @@ def PCAImageCompression(imageFile):
     return imageCompressed
 
 def PCAImagesCompression(fileDirectory):
-    flattenArraysH = pd.DataFrame([])
-    flattenArraysS = pd.DataFrame([])
-    flattenArraysV = pd.DataFrame([])
+    
     listing = os.listdir(fileDirectory)
-    i = 0  
-    for file in listing:
-        if i == 600:
-            break
-        image = cv2.imread(fileDirectory + file)
+    numImages = 7
+    randomIndexes = random.sample(range(0, len(listing)), numImages)
+    flattenArraysH = np.empty((78840, numImages))
+    flattenArraysS = np.empty((78840, numImages))
+    flattenArraysV = np.empty((78840, numImages))
+    for i in range(numImages):
+        image = cv2.imread(fileDirectory + listing[randomIndexes[i]])
         print(image.shape)
-        resized = cv2.resize(image, (1376, 219), interpolation=cv2.INTER_LINEAR)
+        resized = cv2.resize(image, (360, 219), interpolation=cv2.INTER_LINEAR)
         resized = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
         print(resized.shape)
         print(resized.size)
@@ -56,108 +60,114 @@ def PCAImagesCompression(fileDirectory):
         scaledS = S / 255
         scaledV = V / 255
         
-        dfH = pd.Series(scaledH.flatten(), name=file)
-        flattenArraysH = flattenArraysH.append(dfH)
-        dfS = pd.Series(scaledS.flatten(), name=file)
-        flattenArraysS =flattenArraysS.append(dfS)
-        dfV = pd.Series(scaledV.flatten(), name=file)
-        flattenArraysV = flattenArraysV.append(dfV)
-        i += 1
+        #dfH = pd.Series(scaledH.flatten(), name=file)
+        #flattenArraysH = flattenArraysH.append(dfH)
+        #dfS = pd.Series(scaledS.flatten(), name=file)
+        #flattenArraysS =flattenArraysS.append(dfS)
+        #dfV = pd.Series(scaledV.flatten(), name=file)
+        #flattenArraysV = flattenArraysV.append(dfV)
+
+        flattenArraysH[:, i] = scaledH.flatten()
+        flattenArraysS[:, i] = scaledS.flatten()
+        flattenArraysV[:, i] = scaledV.flatten()
+
+
+
 
 
     #print(flattenArraysH)
     #print(flattenArraysS)
     #print(flattenArraysV)
 
-    pcaH = PCA(n_components=6)
-    pcaH.fit(flattenArraysH)
+    #pcaH = PCA(n_components=6)
+    #pcaH.fit(flattenArraysH)
     
 
-    pcaS = PCA(n_components=6)
-    pcaS.fit(flattenArraysS)
+    #pcaS = PCA(n_components=6)
+    #pcaS.fit(flattenArraysS)
 
-    pcaV = PCA(n_components=6)
-    pcaV.fit(flattenArraysV)
+    #pcaV = PCA(n_components=6)
+    #pcaV.fit(flattenArraysV)
 
+    finalMatrix = np.vstack((flattenArraysH, flattenArraysS, flattenArraysV))
 
+    pca6 = PCA(n_components=6)
+    pca6.fit(finalMatrix)
+    transformedImages = pca6.transform(finalMatrix)
 
-    transPCAH = pcaH.transform(flattenArraysH)
-    transPCAS = pcaS.transform(flattenArraysS)
-    transPCAV = pcaV.transform(flattenArraysV)
+    projectedImages = pca6.inverse_transform(transformedImages)
 
-    print(transPCAH.shape)
-    print(transPCAS.shape)
-    print(transPCAV.shape)
+    #transPCAH = pcaH.transform(flattenArraysH)
+    #transPCAS = pcaS.transform(flattenArraysS)
+    #transPCAV = pcaV.transform(flattenArraysV)
 
-    print(f"Hue Channel : {sum(pcaH.explained_variance_ratio_)}")
-    print(f"Saturation Channel: {sum(pcaS.explained_variance_ratio_)}")
-    print(f"Variation Channel  : {sum(pcaV.explained_variance_ratio_)}")
+    #print(transPCAH.shape)
+    #print(transPCAS.shape)
+    #print(transPCAV.shape)
 
-    projectH = pcaH.inverse_transform(transPCAH)
-    print("Done with PCAH")
-    projectS = pcaS.inverse_transform(transPCAS)
-    print("Done with PCAS")
-    projectV = pcaV.inverse_transform(transPCAV)
-    print("Done with PCAV")
+    #print(f"Hue Channel : {sum(pcaH.explained_variance_ratio_)}")
+    #print(f"Saturation Channel: {sum(pcaS.explained_variance_ratio_)}")
+    #print(f"Variation Channel  : {sum(pcaV.explained_variance_ratio_)}")
 
-    print("Done running PCAs")
+    #projectH = pcaH.inverse_transform(transPCAH)
+    #print("Done with PCAH")
+    #projectS = pcaS.inverse_transform(transPCAS)
+    #print("Done with PCAS")
+    #projectV = pcaV.inverse_transform(transPCAV)
+    #print("Done with PCAV")
 
-    return [transPCAH, transPCAS, transPCAV, projectH, projectS, projectV, sum(pcaH.explained_variance_ratio_), sum(pcaS.explained_variance_ratio_), sum(pcaV.explained_variance_ratio_)]
+    #print("Done running PCAs")
+
+    return projectedImages, transformedImages
 
 
 
 if __name__ == "__main__":
     print("Start the processs")
-    [finalH, finalS, finalV, projH, projS, projV, varH, varS, varV] = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/")
+    projectedImages, transformedImages = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/")
     print("Done with transforming shape")
     print("Final Transformation shape is")
-    print(finalH.shape)
-    print(finalS.shape)
-    print(finalV.shape)
 
-    hsv_image = cv2.merge([projH, projS, projV])
-
-    print(projH[0].shape)
-    print(projS[0].shape)
-    print(projV[0].shape)
-
-    H = projH[0].reshape(219, 1376)
-    S = projS[0].reshape(219, 1376)
-    V = projV[0].reshape(219, 1376)
-
-    hsvImage = cv2.merge([H, S, V])
-    print(hsvImage.shape)
-    listing = os.listdir("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/")  
-    origImage = cv2.imread("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/" + listing[0], cv2.COLOR_BGR2HSV)
-    print("Starting Gaussian Process")
-
+    X = projectedImages[:, 0].reshape(657, 360)
+    print("Shape of X is")
+    print(X.shape)
     #kernel = C(1.0, (1e-3, 1e3)) * RBF([5,5], (1e-2, 1e2))
 
-    if max([varH, varS, varV]) == varH:
-        X = projH[0]
-    elif max([varH, varS, varV]) == varS:
-        X = projS[0]
-    else:
-        X = projV[0]
-
-    X = cv2.resize(X, (360, 219), interpolation=cv2.INTER_LINEAR)  
-    print(X.shape)  
-
-    kernel = RBF(length_scale=[1./X.shape[1] for i in range(X.shape[1])])
+    #if max([varH, varS, varV]) == varH:
+    #    X = projH[0]
+    #elif max([varH, varS, varV]) == varS:
+    ##    X = projS[0]
+    #else:
+    #    X = projV[0]
+    #kernel = RBF(length_scale=[1./X.shape[0] for i in range(X.shape[0])])
+    kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-2, 1e2))
 
 
-    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=15)
+    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=30)
 
-    f = open("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.txt", "r")
+    # f = open("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.txt", "r")
     
-    line = f.readline()
+    #line = f.readline()
 
-    y  = line.split(",")
-    y = list(map(float, y))
+    #y  = line.split(",")
+    #y = np.array(list(map(float, y)))
+    #print("Dimensions are")
+
+    y = np.loadtxt("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.csv", delimiter=',')
     
+    print("X and y dimensions are")
 
-    gp.fit(X, y)
-    x = range(360)
+    print(X.shape)
+    print(y.shape)
+
+    gp.fit(X.T, y)
+
+
+    x = np.atleast_2d(np.linspace(0, 360, 1000)).T
+    print(x.shape)
+    #x = np.array(range(360)).reshape(1, -1)
+    #print("Shape is")
+    #print(x.shape)
     y_pred, MSE = gp.predict(x, return_std=True)
     
     print("Results are")
@@ -180,6 +190,7 @@ if __name__ == "__main__":
     plt.ylabel("Distance (m)")
     plt.ylim(-10, 20)
     plt.legend(loc="upper left")
+    plt.show()
     
     
     
