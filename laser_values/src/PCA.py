@@ -13,6 +13,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from sklearn.gaussian_process.kernels import _check_length_scale
 from sklearn import preprocessing
+import time
 
 
 
@@ -40,10 +41,10 @@ def PCAImagesCompression(fileDirectory, numImages):
     randomIndexes = random.sample(range(0, len(listing)), numImages)
 
 
-    flattenedMatrix = np.empty((657, 360))
+    flattenedMatrix = np.empty((420, 360))
     for i in range(numImages):
         image = cv2.imread(fileDirectory + listing[randomIndexes[i]])
-        resized = cv2.resize(image, (360, 219), interpolation=cv2.INTER_LINEAR)
+        resized = cv2.resize(image, (360, 140), interpolation=cv2.INTER_LINEAR)
         resized = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
         H, S, V = cv2.split(resized)
         scaledH = H / 180
@@ -99,7 +100,11 @@ def PCAImagesCompression(fileDirectory, numImages):
 if __name__ == "__main__":
     #NumImages = TrainingSize + 1
     numImages = 11
+    tic = time.perf_counter()
     finalComponents = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/", numImages)
+    toc = time.perf_counter()
+    diffTime = toc - tic
+    print("Time taken to run  PCA is " + str(diffTime) + " seconds")
     ObservedData = np.loadtxt("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.csv", delimiter=',')
     x = np.atleast_2d(np.linspace(0, 360, 100)).T
     kernel = RBF()
@@ -107,9 +112,19 @@ if __name__ == "__main__":
     y = np.tile(ObservedData, numImages - 1)
     X = finalComponents[0:360 * (numImages - 1), :]
     x = finalComponents[360 * (numImages - 1):360 * numImages, :]
-    gp.fit(X, y)
+    tic = time.perf_counter()
 
-    y_pred, sigma = gp.predict(x, return_std=True)  
+    gp.fit(X, y)
+    toc = time.perf_counter()
+    diffTime = toc - tic
+    print("Time taken to run  Gaussian Process Train is " + str(diffTime) + " seconds")
+
+    tic = time.perf_counter()
+    y_pred, sigma = gp.predict(x, return_std=True) 
+    toc = time.perf_counter()
+    diffTime = toc - tic
+    print("Time taken to run  Gaussian Process Predict is " + str(diffTime) + " seconds")
+
     plt.figure()
     plt.plot(range(360), ObservedData, "r.", markersize=10, label="Observations")
     plt.plot(range(360), y_pred, "b-", label="Prediction")
