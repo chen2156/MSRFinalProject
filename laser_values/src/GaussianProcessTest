@@ -1,0 +1,200 @@
+#! /usr/bin/env python3
+
+
+import numpy as np
+import cv2
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from scipy.stats import stats
+import matplotlib.image as mpimg
+from glob import iglob
+import random
+
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.gaussian_process.kernels import _check_length_scale
+from sklearn import preprocessing
+import time
+
+import joblib
+import rospy
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import LaserScan
+from cv_bridge import CvBridge
+import sys
+
+
+
+class ImageProcess:
+
+    def __init__(self):
+        #Variable to store image
+        self.image = None
+
+        #Variable to store reduced dimension image columns
+        self.matrix = None
+
+        #Create bridge to convert ROS image message to OpenCV image
+        self.bridge = CvBridge()
+
+        # Node cycle rate (in Hz).
+        self.loop_rate = rospy.Rate(0.5)
+
+        #Variable to store real scan message
+        self.scanMsg = None
+
+        # Publisher which will publish to the topic '/turtle1/cmd_vel'.
+        self.lidarPublisher = rospy.Publisher('fakeScan', LaserScan, queue_size=50)
+
+        # A subscriber to the topic '/usb_cam/image_raw'.
+        self.image_subscriber = rospy.Subscriber('/usb_cam/image_raw', Image, self.Imagecallback)
+
+        # A subscriber to the topic '/scan'.
+        self.scan_subscriber = rospy.Subscriber('/scan', LaserScan, self.scanCallback)
+
+
+    #Callback of image subscriber
+    def Imagecallback(self, msg):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(msg)
+        except CvBridgeError as e:
+            print(e)
+            rospy.loginfo("Something wrong with retrieving image")
+            sys.exit()
+
+    #Callback of reak LIDAR message
+    def scanCallback(self, msg):
+        rospy.loginfo("Scan Received")
+        self.scanMsg = msg     
+
+    #Unwarp the image
+    def UnwarpImage(self):
+        output = self.image.copy()
+        gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+        # detect circles in the image
+        # adjust minRadius so one circle is generated
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 150)
+        # ensure at least some circles were found
+        if circles is not None:
+	        # convert the (x, y) coordinates and radius of the circles to integers
+	        circles = np.round(circles[0, :]).astype("int")
+	        # loop over the (x, y) coordinates and radius of the circles
+	        for (x, y, r) in circles:
+		        # draw the circle in the output image, then draw a rectangle
+		        # corresponding to the center of the circle
+		        cv2.circle(output, (x, y), r, (0, 255, 0), 4)
+		        cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
+
+
+        #Extract circle from image
+        i = circles[0]
+
+        height = self.image.shape[0]
+        width = self.image.shape[1]
+
+        canvas = np.zeros((height, width))
+
+        # Draw the outer circle:
+        color = (255, 255, 255)
+        thickness = -1
+        centerX = i[0]
+        centerY = i[1]
+        radius = i[2]
+        cv2.circle(canvas, (centerX, centerY), radius, color, thickness)
+
+        # Create a copy of the input and mask input:
+        imageCopy = self.image.copy()
+        imageCopy[canvas == 0] = (0, 0, 0)
+
+        # Crop the roi:
+        x = centerX - radius
+        y = centerY - radius
+        h = 2 * radius
+        w = 2 * radius
+
+        #UnWarp the image
+        newHeight = round(radius)
+        newWidth = int(round(2.0 * np.pi * radius))
+
+        map_x = np.zeros((newHeight, newWidth), np.float32)
+        map_y = np.zeros((newHeight, newWidth), np.float32)
+
+
+        #Build up the image map
+        for y in range(0, int(newHeight - 1)):
+            for x in range(0, int(newWidth - 1)):
+
+                r = float(y) / float(newHeight) * radius
+                theta = float(x) / float(newWidth) * 2.0 * np.pi
+
+                xS = centerX + r * np.sin(theta)
+                yS = centerY + r * np.cos(theta)
+
+                map_x.itemset((y, x), int(xS))
+                map_y.itemset((y, x), int(yS))
+
+        #Unwarp
+
+        newUnwarpImage = cv2.remap(imageCopy, map_x, map_y, cv2.INTER_LINEAR)
+
+        #flip the image upside down
+
+        newUnwarpImage = cv2.flip(newUnwarpImage, 0)
+        self.image = newUnwarpImage
+
+    #Decrease the dimension of image from 420 to 6
+    def PCAImageCompression(self):
+        resized = cv2.resize(self.image, (360, 140), interpolation=cv2.INTER_LINEAR)
+        resized = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+        H, S, V = cv2.split(resized)
+        scaledH = H / 180
+        scaledS = S / 255
+        scaledV = V / 255
+        flattenedImage = np.vstack((scaledH, scaledS, scaledV))
+        if i == 0:
+            flattenedMatrix[:] = flattenedImage
+        else:
+            flattenedMatrix = np.hstack((flattenedMatrix, flattenedImage))    
+
+        finalMatrix = np.empty((6, 1))
+        pca = PCA(6)
+
+        pca.fit(flattenedMatrix.T)
+
+        finalMatrix = pca.transform(flattenedMatrix.T)
+        self.matrix = finalMatrix
+
+
+    #Run a saved Gaussian Process Model
+    def GaussianProcess(self):
+        GaussianProcessModel = joblib.load("/home/chen2156/laserData/src/laser_values/src/10ImageGaussianProcessModel.sav")
+        y_pred, sigma = GaussianProcessModel.predict(self.matrix, return_std=True) 
+        scan = LaserScan()
+
+        scan.header.stamp = self.scanMsg.header.stamp
+        scan.header.frame_id = self.scanMsg.frame_id
+        scan.header.seq = self.scanMsg.header.seq
+        scan.angle_min = self.scanMsg.angle_min
+        scan.angle_max = self.scanMsg.angle_max
+        scan.angle_increment = self.scanMsg.angle_increment
+        scan.time_increment =self.scanMsg.time_increment
+        scab.scan_time = self.scanMsg.scan_time
+        scan.range_min = min(y_pred)
+        scan.range_max = max(y_pred)
+        scan.ranges = y_pred
+        scan.intensities = self.scanMsg.intensities
+        lidarPublisher.publish(scan)
+
+if __name__ == "__main__":
+    try:
+        # Creates a node with name 'imageProcessor' and make sure it is a
+        # unique node (using anonymous=True).
+        rospy.init_node('imageProcessor', anonymous=True)
+        imProc = ImageProcess()
+        imProc.UnwarpImage()
+        imProc.PCAImageCompression()
+        imProc.GaussianProcess()
+    except rospy.ROSInterruptException:
+        pass

@@ -98,8 +98,8 @@ def PCAImagesCompression(fileDirectory, numImages):
 
 
 if __name__ == "__main__":
-    #NumImages = TrainingSize + 1
-    numImages = 11
+    #NumImages = Trainingsize + 1 
+    numImages = 6
     tic = time.perf_counter()
     finalComponents = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/", numImages)
     toc = time.perf_counter()
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     plt.ylabel("Distance (m)")
     plt.ylim(-10, 20)
     plt.legend(loc="upper left")
-    plt.savefig("/home/chen2156/laserData/src/laser_values/src/multipleImages/10TrainingImages.png")
+    plt.savefig("/home/chen2156/laserData/src/laser_values/src/multipleImages/5TrainingImages.png")
     
     
 

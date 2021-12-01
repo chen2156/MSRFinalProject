@@ -1,0 +1,15 @@
+<launch>
+
+	<machine name="foo" address="gauss" env-loader="/opt/ros/noetic/env.sh" user="msr"/>
+	<!-- This node description you can take from usb_cam-test.launch -->
+	<node machine="foo" name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
+		<param name="video_device" value="/dev/video0" />
+		<param name="pixel_format" value="yuyv" />
+	</node>
+	<include file="$(find laser_values)/launch/exploreMap.launch">
+	</include>
+	
+	<node pkg="laser_values" type="GaussianProcessTest" name="scan_values" output="screen"> 
+    	</node>
+	
+</launch>
