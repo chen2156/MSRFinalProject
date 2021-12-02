@@ -2,7 +2,7 @@
 <package format="2">
   <name>laser_values</name>
   <version>0.0.0</version>
-  <description>The laser_values package</description>
+  <description>The package for the pipeline</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

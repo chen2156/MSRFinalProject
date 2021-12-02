@@ -9,7 +9,7 @@
 	<include file="$(find laser_values)/launch/exploreMap.launch">
 	</include>
 	
-	<node pkg="laser_values" type="GaussianProcessTest" name="scan_values" output="screen"> 
-    	</node>
+	<!-- <node pkg="laser_values" type="GaussianProcessTest" name="scan_values" output="screen"> 
+    	</node> -->
 	
 </launch>
