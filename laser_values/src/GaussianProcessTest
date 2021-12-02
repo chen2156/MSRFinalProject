@@ -30,6 +30,7 @@ import sys
 class ImageProcess:
 
     def __init__(self):
+        rospy.loginfo("Create the node")
         #Variable to store image
         self.image = None
 
@@ -57,8 +58,11 @@ class ImageProcess:
 
     #Callback of image subscriber
     def Imagecallback(self, msg):
+        rospy.loginfo("Image Callback")
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg)
+            rospy.loginfo("Receiving image")
+            self.image = self.bridge.imgmsg_to_cv2(msg)
+            rospy.loginfo(self.bridge.imgmsg_to_cv2(msg))
         except CvBridgeError as e:
             print(e)
             rospy.loginfo("Something wrong with retrieving image")
@@ -66,11 +70,16 @@ class ImageProcess:
 
     #Callback of reak LIDAR message
     def scanCallback(self, msg):
+        rospy.loginfo("scan Callback")
         rospy.loginfo("Scan Received")
         self.scanMsg = msg     
 
     #Unwarp the image
     def UnwarpImage(self):
+        rospy.loginfo("Unwarp the image")
+        if self.image is None:
+            rospy.loginfo("self.image is None")
+            sys.exit()
         output = self.image.copy()
         gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         # detect circles in the image
@@ -146,6 +155,7 @@ class ImageProcess:
 
     #Decrease the dimension of image from 420 to 6
     def PCAImageCompression(self):
+        rospy.loginfo("PCAImageCompression")
         resized = cv2.resize(self.image, (360, 140), interpolation=cv2.INTER_LINEAR)
         resized = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
         H, S, V = cv2.split(resized)
@@ -169,6 +179,7 @@ class ImageProcess:
 
     #Run a saved Gaussian Process Model
     def GaussianProcess(self):
+        rospy.loginfo("Gaussian Process Model")
         GaussianProcessModel = joblib.load("/home/chen2156/laserData/src/laser_values/src/10ImageGaussianProcessModel.sav")
         y_pred, sigma = GaussianProcessModel.predict(self.matrix, return_std=True) 
         scan = LaserScan()
@@ -186,15 +197,22 @@ class ImageProcess:
         scan.ranges = y_pred
         scan.intensities = self.scanMsg.intensities
         lidarPublisher.publish(scan)
-
 if __name__ == "__main__":
+    rospy.loginfo("makis")
     try:
         # Creates a node with name 'imageProcessor' and make sure it is a
         # unique node (using anonymous=True).
         rospy.init_node('imageProcessor', anonymous=True)
+        rospy.loginfo("makis")
         imProc = ImageProcess()
-        imProc.UnwarpImage()
-        imProc.PCAImageCompression()
-        imProc.GaussianProcess()
+        rospy.loginfo("makis")
+        # imProc.UnwarpImage()
+        # rospy.loginfo("makis")
+        # imProc.PCAImageCompression()
+        # rospy.loginfo("makis")
+        # imProc.GaussianProcess()
+        # rospy.loginfo("makis")
+        rospy.spin()
+        # rospy.loginfo("makis")
     except rospy.ROSInterruptException:
         pass
