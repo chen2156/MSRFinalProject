@@ -20,7 +20,7 @@
 	<node pkg="rviz" type="rviz" name="rviz" required="true"
         	args="-d $(find turtlebot3_navigation)/rviz/turtlebot3_navigation.rviz"/>
 
-	<!-- <node pkg="turtlebot3_teleop" type="turtlebot3_teleop_key" name="turtlebot3_teleop_keyboard"  output="screen"/> -->
+	<!--<node pkg="turtlebot3_teleop" type="turtlebot3_teleop_key" name="turtlebot3_teleop_keyboard"  output="screen"/> -->
 		
 	<!--node name="frontierExplore" pkg="newturtlebot3" type="explornode" output="screen"-->
 
