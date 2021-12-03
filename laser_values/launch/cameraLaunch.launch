@@ -1,15 +1,44 @@
 <launch>
 
 	<machine name="foo" address="gauss" env-loader="/opt/ros/noetic/env.sh" user="msr"/>
+
+	<!--Turtlebot3_robot.launch-->
+
+	<arg name="multi_robot_name" default=""/>
+  	<arg name="set_lidar_frame_id" default="base_scan"/>
+	<arg name="set_frame_id" default="base_scan"/>
+	<arg name="runLidar" default="true"/>
+	<arg name="runGaussProc" default="false"/>
+  
+
+	<node machine="foo" pkg="rosserial_python" type="serial_node.py" name="turtlebot3_core" output="screen">
+    	<param name="port" value="/dev/ttyACM0"/>
+    	<param name="baud" value="115200"/>
+    	<param name="tf_prefix" value="$(arg multi_robot_name)"/>
+    </node>
+
+	<node machine="foo" pkg="hls_lfcd_lds_driver" type="hlds_laser_publisher" name="turtlebot3_lds" output="screen" if="$(arg runLidar)">
+    	<param name="port" value="/dev/ttyUSB0"/>
+    	<param name="frame_id" value="$(arg set_frame_id)"/>
+  	</node>
+	  
+
+	<node machine="foo" pkg="turtlebot3_bringup" type="turtlebot3_diagnostics" name="turtlebot3_diagnostics" output="screen"/>
+  
+
 	<!-- This node description you can take from usb_cam-test.launch -->
 	<node machine="foo" name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
 		<param name="video_device" value="/dev/video0" />
 		<param name="pixel_format" value="yuyv" />
 	</node>
+
 	<include file="$(find laser_values)/launch/exploreMap.launch">
 	</include>
 	
-	<!-- <node pkg="laser_values" type="GaussianProcessTest" name="scan_values" output="screen"> 
-    	</node> -->
+	<remap from="fakeScan" to="scan" if="$(arg runGaussProc)"/>
+	<node pkg="laser_values" type="GaussianProcessTest" name="scan_values" output="screen" if="$(arg runGaussProc)"> 
+    </node>
+
 	
+
 </launch>

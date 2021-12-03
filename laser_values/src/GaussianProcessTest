@@ -37,14 +37,17 @@ class ImageProcess:
         #Variable to store reduced dimension image columns
         self.matrix = None
 
+        #Variable storing the sequence number
+        self.seq = 0
+
         #Create bridge to convert ROS image message to OpenCV image
         self.bridge = CvBridge()
 
         # Node cycle rate (in Hz).
-        self.loop_rate = rospy.Rate(0.5)
+        self.loop_rate = rospy.Rate(5)
 
         #Variable to store real scan message
-        self.scanMsg = None
+        #self.scanMsg = None
 
         # Publisher which will publish to the topic '/turtle1/cmd_vel'.
         self.lidarPublisher = rospy.Publisher('fakeScan', LaserScan, queue_size=50)
@@ -53,7 +56,7 @@ class ImageProcess:
         self.image_subscriber = rospy.Subscriber('/usb_cam/image_raw', Image, self.Imagecallback)
 
         # A subscriber to the topic '/scan'.
-        self.scan_subscriber = rospy.Subscriber('/scan', LaserScan, self.scanCallback)
+        #self.scan_subscriber = rospy.Subscriber('/scan', LaserScan, self.scanCallback)
 
 
     #Callback of image subscriber
@@ -61,18 +64,25 @@ class ImageProcess:
         rospy.loginfo("Image Callback")
         try:
             rospy.loginfo("Receiving image")
+            self.seq += 1
             self.image = self.bridge.imgmsg_to_cv2(msg)
             rospy.loginfo(self.bridge.imgmsg_to_cv2(msg))
+            self.UnwarpImage()
+            rospy.loginfo("makis")
+            self.PCAImageCompression()
+            rospy.loginfo("makis")
+            self.GaussianProcess()
+            rospy.loginfo("makis")
         except CvBridgeError as e:
             print(e)
             rospy.loginfo("Something wrong with retrieving image")
             sys.exit()
 
     #Callback of reak LIDAR message
-    def scanCallback(self, msg):
-        rospy.loginfo("scan Callback")
-        rospy.loginfo("Scan Received")
-        self.scanMsg = msg     
+    #def scanCallback(self, msg):
+    #    rospy.loginfo("scan Callback")
+    #    rospy.loginfo("Scan Received")
+    #    self.scanMsg = msg     
 
     #Unwarp the image
     def UnwarpImage(self):
@@ -163,17 +173,14 @@ class ImageProcess:
         scaledS = S / 255
         scaledV = V / 255
         flattenedImage = np.vstack((scaledH, scaledS, scaledV))
-        if i == 0:
-            flattenedMatrix[:] = flattenedImage
-        else:
-            flattenedMatrix = np.hstack((flattenedMatrix, flattenedImage))    
-
-        finalMatrix = np.empty((6, 1))
+        
+        #flattenedMatrix[:] = flattenedImage
+        #finalMatrix = np.empty((6, 1))
         pca = PCA(6)
 
-        pca.fit(flattenedMatrix.T)
+        pca.fit(flattenedImage.T)
 
-        finalMatrix = pca.transform(flattenedMatrix.T)
+        finalMatrix = pca.transform(flattenedImage.T)
         self.matrix = finalMatrix
 
 
@@ -184,19 +191,19 @@ class ImageProcess:
         y_pred, sigma = GaussianProcessModel.predict(self.matrix, return_std=True) 
         scan = LaserScan()
 
-        scan.header.stamp = self.scanMsg.header.stamp
-        scan.header.frame_id = self.scanMsg.frame_id
-        scan.header.seq = self.scanMsg.header.seq
-        scan.angle_min = self.scanMsg.angle_min
-        scan.angle_max = self.scanMsg.angle_max
-        scan.angle_increment = self.scanMsg.angle_increment
-        scan.time_increment =self.scanMsg.time_increment
-        scab.scan_time = self.scanMsg.scan_time
+        scan.header.stamp = rospy.Time.now()
+        scan.header.frame_id = "base_scan"
+        scan.header.seq = self.seq
+        scan.angle_min = 0.0
+        scan.angle_max = 6.2657318115234375
+        scan.angle_increment = 0.01745329238474369
+        scan.time_increment = 0.0005592841189354658
+        scan.scan_time = 0.20134228467941284
         scan.range_min = min(y_pred)
         scan.range_max = max(y_pred)
         scan.ranges = y_pred
-        scan.intensities = self.scanMsg.intensities
-        lidarPublisher.publish(scan)
+        scan.intensities = []
+        self.lidarPublisher.publish(scan)
 if __name__ == "__main__":
     rospy.loginfo("makis")
     try:
@@ -206,12 +213,6 @@ if __name__ == "__main__":
         rospy.loginfo("makis")
         imProc = ImageProcess()
         rospy.loginfo("makis")
-        # imProc.UnwarpImage()
-        # rospy.loginfo("makis")
-        # imProc.PCAImageCompression()
-        # rospy.loginfo("makis")
-        # imProc.GaussianProcess()
-        # rospy.loginfo("makis")
         rospy.spin()
         # rospy.loginfo("makis")
     except rospy.ROSInterruptException:
