@@ -16,7 +16,11 @@ from sklearn import preprocessing
 import time
 
 import joblib
+import pickle
 
+'''
+This script is used to train the model and save it into a .sav file
+'''
 
 def PCAImageCompression(imageFile):
     image = cv2.cvtColor(cv2.imread(imageFile), cv2.COLOR_BGR2HSV)
@@ -63,44 +67,11 @@ def PCAImagesCompression(fileDirectory, numImages):
     pca.fit(flattenedMatrix.T)
 
     finalMatrix = pca.transform(flattenedMatrix.T)
-
-
-    '''
-    for i in range(flattenedMatrix.shape[1]):
-        if i == 100:
-            break    
-        reshap = flattenedMatrix[:, i].reshape(-1, 1)
-     
-        covMatrix = np.cov(reshap)
-        
-        covMatrix = np.nan_to_num(covMatrix)
-        eigenValues, eigenVectors = np.linalg.eig(covMatrix)
-
-        idx = eigenValues.argsort()[::-1]   
-        eigenValues = eigenValues[idx]
-        eigenVectors = eigenVectors[:,idx]
-
-        featureVector = eigenVectors[:, len(eigenVectors) - 6: len(eigenVectors)]
-
-   
-
-        finalTransform = np.matmul(featureVector.T, reshap)
-
-       
-
-        if i == 0:
-            finalMatrix[:] = finalTransform
-           
-        else:
-            finalMatrix = np.hstack((finalMatrix, finalTransform))
-    '''
     return finalMatrix
-
-
 
 if __name__ == "__main__":
     #NumImages = Trainingsize + 1 
-    numImages = 11
+    numImages = 6
     tic = time.perf_counter()
     finalComponents = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/", numImages)
     toc = time.perf_counter()
@@ -109,42 +80,47 @@ if __name__ == "__main__":
     ObservedData = np.loadtxt("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.csv", delimiter=',')
     x = np.atleast_2d(np.linspace(0, 360, 100)).T
     kernel = RBF()
-    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=100)
     y = np.tile(ObservedData, numImages - 1)
     X = finalComponents[0:360 * (numImages - 1), :]
     x = finalComponents[360 * (numImages - 1):360 * numImages, :]
-    tic = time.perf_counter()
 
+    print(X.shape)
+    print(y.shape)
+
+    print("Size of the array X: ",
+      X.size)
+  
+    print("Memory size of one array element in bytes: ",
+      X.itemsize)
+  
+    # memory size of numpy array
+    print("Memory size of numpy array X in bytes:",
+      X.size * X.itemsize)
+
+    print("Size of the array y: ",
+      y.size)
+  
+    print("Memory size of one array element in bytes: ",
+      y.itemsize)
+  
+    # memory size of numpy array
+    print("Memory size of numpy array y in bytes:",
+      y.size * y.itemsize)
+
+    TotalMemorySize = X.size * X.itemsize + y.size * y.itemsize
+    print("Total memory size in bytes is: " + str(TotalMemorySize))
+
+    memGB = TotalMemorySize / 1e9
+
+    print("Total memory size in GB is: " + str(memGB))
+
+    gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=100, copy_X_train=False)
+    tic = time.perf_counter()
     gp.fit(X, y)
     toc = time.perf_counter()
     diffTime = toc - tic
-    print("Time taken to run  Gaussian Process Train is " + str(diffTime) + " seconds")
-
-    filename = "/home/chen2156/laserData/src/laser_values/src/10ImageGaussianProcessModel.sav"
+    print("Time taken to train GP is " + str(diffTime) + " seconds")
+    filename = "/home/chen2156/laserData/src/laser_values/src/5ImagesGaussianProcessModel.sav"
     joblib.dump(gp, filename)
 
-    #tic = time.perf_counter()
-    #y_pred, sigma = gp.predict(x, return_std=True) 
-    #toc = time.perf_counter()
-    #diffTime = toc - tic
-    #print("Time taken to run  Gaussian Process Predict is " + str(diffTime) + " seconds")
-
-    #plt.figure()
-    #plt.plot(range(360), ObservedData, "r.", markersize=10, label="Observations")
-    #plt.plot(range(360), y_pred, "b-", label="Prediction")
-    #plt.fill(
-    #    np.concatenate([range(360), range(360)[::-1]]),
-    #    np.concatenate([y_pred - 1.9600 * sigma, (y_pred + 1.9600 * sigma)[::-1]]),
-    #    alpha=0.5,
-    #    fc="b",
-    ##    ec="None",
-     #   label="95% confidence interval",
-    #)
-    #plt.xlabel("Degree ")
-    #plt.ylabel("Distance (m)")
-    #plt.ylim(-10, 20)
-    #plt.legend(loc="upper left")
-    #plt.savefig("/home/chen2156/laserData/src/laser_values/src/multipleImages/5TrainingImages.png")
-    
-    
-
+   

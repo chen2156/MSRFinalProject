@@ -24,11 +24,13 @@ from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
 from cv_bridge import CvBridge
 import sys
+import pickle
 
-
-
+'''
+This node is used to generate depth values generated from the Gaussian Process Machine Learning Model.  The depth values generated will be used to run SLAM
+'''
 class ImageProcess:
-
+    #Creating the rosnode
     def __init__(self):
         rospy.loginfo("Create the node")
         #Variable to store image
@@ -55,6 +57,14 @@ class ImageProcess:
         # A subscriber to the topic '/usb_cam/image_raw'.
         self.image_subscriber = rospy.Subscriber('/usb_cam/image_raw', Image, self.Imagecallback)
 
+        self.models = []
+        with open("/home/chen2156/laserData/src/laser_values/src/models.pckl", "rb") as f:
+            while True:
+                try:
+                    self.models.append(pickle.load(f))
+                except EOFError:
+                    break
+
         # A subscriber to the topic '/scan'.
         #self.scan_subscriber = rospy.Subscriber('/scan', LaserScan, self.scanCallback)
 
@@ -76,13 +86,7 @@ class ImageProcess:
         except CvBridgeError as e:
             print(e)
             rospy.loginfo("Something wrong with retrieving image")
-            sys.exit()
-
-    #Callback of reak LIDAR message
-    #def scanCallback(self, msg):
-    #    rospy.loginfo("scan Callback")
-    #    rospy.loginfo("Scan Received")
-    #    self.scanMsg = msg     
+            sys.exit() 
 
     #Unwarp the image
     def UnwarpImage(self):
@@ -187,8 +191,23 @@ class ImageProcess:
     #Run a saved Gaussian Process Model
     def GaussianProcess(self):
         rospy.loginfo("Gaussian Process Model")
-        GaussianProcessModel = joblib.load("/home/chen2156/laserData/src/laser_values/src/10ImageGaussianProcessModel.sav")
-        y_pred, sigma = GaussianProcessModel.predict(self.matrix, return_std=True) 
+        #GaussianProcessModel = joblib.load("/home/chen2156/laserData/src/laser_values/src/10ImageGaussianProcessModel.sav")
+        predictions = []
+        sigmas = []
+        for model in self.model:
+            y_pred, sigma = model.predict(self.matrix, return_std=True)
+            predictions.append(y_pred)
+            sigmas.append(sigma) 
+        finalPredictions = []
+        for c in range(360):
+            minSig = sigmas[0][c]
+            minIndex = 0
+            for sig in range(1, len(sigmas)):
+                if sigmas[sig][c] < minSig:
+                    minSig = sigmas[sig][c]
+                    minIndex = sig
+            finalPredictions.append(y_pred[minIndex][c])
+
         scan = LaserScan()
 
         scan.header.stamp = rospy.Time.now()
@@ -199,9 +218,9 @@ class ImageProcess:
         scan.angle_increment = 0.01745329238474369
         scan.time_increment = 0.0005592841189354658
         scan.scan_time = 0.20134228467941284
-        scan.range_min = min(y_pred)
-        scan.range_max = max(y_pred)
-        scan.ranges = y_pred
+        scan.range_min = min(finalPredictions)
+        scan.range_max = max(finalPredictions)
+        scan.ranges = finalPredictions
         scan.intensities = []
         self.lidarPublisher.publish(scan)
 if __name__ == "__main__":
