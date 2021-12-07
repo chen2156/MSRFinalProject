@@ -4,6 +4,10 @@ import cv2
 from PIL import Image
 import os
 
+'''
+This script is used to unwarp images from the raspberry PI camera.  The unwarped images would be used to train the Gaussian Process Model
+'''
+
 def unwrapImage(filePath):
     #detect circle
     image = cv2.imread(filePath)
@@ -199,7 +203,6 @@ def unwrapImages(fileDir1, fileDir2):
 
         newUnwarpImage = cv2.remap(imageCopy, map_x, map_y, cv2.INTER_LINEAR)
 
-        #newResult = Image(newUnwarpImage, cv2image=True)
 
 
         # show the output image
@@ -222,6 +225,7 @@ def unwrapImages(fileDir1, fileDir2):
         cv2.imwrite(fileDir2 + imageName + "Unwarped.jpg", newUnwarpImage)   
 
 if __name__ == "__main__":
+    #Uncomment first two lines to test on one image
     #filename = "/home/chen2156/laserData/src/laser_values/src/multipleImages/images/frame0200.jpg"
     #unwrapImage(filename)
 

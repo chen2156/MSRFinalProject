@@ -15,7 +15,9 @@ from sklearn.gaussian_process.kernels import _check_length_scale
 from sklearn import preprocessing
 import time
 
-
+'''
+This code is used to plot the performance of the Gaussian Process
+'''
 
 def PCAImageCompression(imageFile):
     image = cv2.cvtColor(cv2.imread(imageFile), cv2.COLOR_BGR2HSV)
