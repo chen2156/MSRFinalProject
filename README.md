@@ -24,14 +24,16 @@ Raspberry Pi camera
 To build the robot, disassembled the top layer, including the LIDAR, place the Raspberry Pi camera on the second top layer such that it is centered on the robot.  Camera mount was 3D printed.  Move the USB2LDS board to the same layer as camera.  Assemble the waffle plate and attach the convex mirror to the bottom of it.  Plug Raspberry pi camera into the raspberry pi board 
 
 <h3>Testing the camera</h3>
-Turn on the raspberry pi camera by ssh into the robot.  After I sshed into the robot:  
+Turn on the raspberry pi camera by ssh into the robot.  After I sshed into the robot and ran:  
 
  `rosrun usb_cam usb_cam_node _pixel_format:=yuyv` 
 
 In another tab I ran `rqt_image_view` to check if the camera was working.  The camera should publish to `/usb_cam/image_view` topic.  
 
-<h3>Finish Assembly</h3>
+<h3>Finish Assembly</h3>  
 After checking that the camera works.  Add spacers and calibrate the camera such that the camera can clearly film the mirror's reflection of the robot's surrounding clearly  Reassemble the LIDAR system back to the robot.  The data generated from the LIDAR system will be used as the ground truth camera
+
+<h2>Training the machine learning model<h2> 
 
 <h3>Capure a dataset of images</h3>  
 
@@ -39,10 +41,13 @@ After system is set up, record a bag file of the camera
 
 `rosbag record -O subset /usb_cam/image_view`
 
-After recording the bag file, I wrote [a launch file](laser_values/src/multipleImages/export.launch) that would export the images from the bag file and save it to a hidden folder named .ros in the home directory.  You can copy the files from the folder to whatever folder you would like by running `mv ~/.ros/frame*.jpg <dest folder>`
+After recording the bag file, I wrote [a launch file](laser_values/src/multipleImages/export.launch) that would export the images from the bag file and save it to a hidden folder named .ros in the home directory.  To run this, you can do `roslaunch laser_values export.launch`  You can copy the files from the folder to whatever folder you would like by running `mv ~/.ros/frame*.jpg <dest folder>`
 Example of image generated:  
 ![Alt Text](laser_values/src/multipleImages/images/frame0000.jpg)  
 
+<h3>Generating the LIDAR data</h3>
+
+In addition to capturing the images, I wrote [a launch file](laser_values/launch/laserScan.launch).  This allows the LIDAR data to be saved into a csv file, which would eventually be used to train the Gaussian Process Model.  To run the file, you can do `roslaunch laser_values laserScan.launch`
 
 <h3>Unwarping the Images</h3>  
 
@@ -55,12 +60,41 @@ As sbown in the image, to unwarp the image, I used the OpenCV library to detect 
 
 <h3>Applying PCA on the image</h3>  
 
-To apply the PCA on the HSV image, I first split the images into its three seperate components.  I then normalized them by dividing the Hue channel by 180, the saturation channel by 255, and the value channel by 255 since H had a range of (0, 180), S had a range of (0, 255), and V had a range of (0, 255).  I then stored them as Series and appended to their respected pandas Dataframes.  I then called create a 6 component PCA using scikitlearn's PCA function, and fitted it to the respective PCAs.  I then called the transform function to get the resulting PCA matrix
+To apply the PCA on the HSV image, I first split the images into its three seperate components.  I then normalized them by dividing the Hue channel by 180, the saturation channel by 255, and the value channel by 255 since H had a range of (0, 180), S had a range of (0, 255), and V had a range of (0, 255).  I then append the results into a numpy array.  Each image initially had a size of (140,360), when flattened out became a size of 420 x 360.  To reduce the dimension of the image, I first looped through each column of the image and then created the covariance matrix corresponding to the column.  Then, I computed the eigenvalues and their corresponding eigenvectors.  Next, I sorted the eigenvectors based off the numeric value of their corresponding eigenvalue, and stored the first 6 eigenvectors corresponding to the first six largest eigenvalues.  Call this the feature vector  Then I transformed the flattened image by multiplying the transpose of the feature vector with the transpose of flatten image to get a transformed series of columns with reduced dimensions.  In the experiment, I transformed 600 420x360 images from to a new matrix of 6 x 216000, which would be inputted to the Gaussian Process
 
-<h3>Applying Gaussian Process on the image</h3>  
 
-Since the environment is a static enviroment, I would first pick one of the PCA-reduced images in the dataset.  I would then reduce the width of the image down to 360 pixels.  I would then set that as X.  The observed data is the data coming from the LIDAR, which is set to y.  Then, I would then have x be the indexes from 0 to 360 degree and run the functions of scikit-learn on the inputs and plot the results
+<h3>Training the Gaussian Process Model</h3>  
 
+Once the image columns have been reduced, I input them with the corresponding distance values calculated from the LIDAR into the Gaussian Process Library from scikit learn.  This generates a model which I save into a .sav file using the joblib library.  To generate the model, you can run  
+
+`python3 PCAsaveGPAModel.py`
+
+in the terminal.
+
+<h2> Testing the Gaussian Model with the raspberrypi camera</h2>  
+
+<h3>Running the algorithm with the robot</h3> 
+
+To run the Gaussian Process Model with the robot.  I first started roscore on the local computer, Then in a new tab sshed into the robot using
+
+`ssh -o SendEnv=ROS_MASTER_URI msr@gauss` 
+
+This will prompt for a password.  If you failed to connect to the robot due to issues related to permission, you can run  
+`ssh-add ~/.ssh/id_turtle`
+
+Once in the turtlebot, set the permission of the camera by doing 
+`sudo chmod 777 /dev/video0` 
+
+Once the permissions was set, open a new tab to run the turtlebot with the camera.  There are two ways to run the robot.  Both allow you to run SLAM while contorlling the robot using WASD keys
+The first way is to run the robot with LIDAR:  
+
+`roslaunch laser_values cameraLaunch.launch runLidar:=true runGaussProc:=false`
+
+The second way is to run the robot using the depth values generated from the Gaussian Process Model and camera without the LIDAR running:  
+
+`roslaunch laser_values cameraLaunch.launch runLidar:=false runGaussProc:=true`  
+
+If no arguments are given, it will default to the first way.  Once the launch file is running, you can move the robot around to generate the map 
 
 
 
