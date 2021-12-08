@@ -86,7 +86,7 @@ This will prompt for a password.  If you failed to connect to the robot due to i
 Once in the turtlebot, set the permission of the camera by doing 
 `sudo chmod 777 /dev/video0` 
 
-Once the permissions was set, open a new tab to run the turtlebot with the camera.  There are two ways to run the robot.  Both allow you to run SLAM while contorlling the robot using WASD keys
+Once the permissions was set, open a new tab to run the turtlebot with the camera.  There are two ways to run the robot.  Both allow you to run SLAM while controlling the robot using WASD keys
 The first way is to run the robot with LIDAR:  
 
 `roslaunch laser_values cameraLaunch.launch runLidar:=true runGaussProc:=false`
@@ -95,11 +95,11 @@ The second way is to run the robot using the depth values generated from the Gau
 
 `roslaunch laser_values cameraLaunch.launch runLidar:=false runGaussProc:=true`  
 
-If no arguments are given, it will default to the first way.  Once the launch file is running, you can move the robot around to generate the map 
+If no arguments are given, it will default to the first way.  Once the launch file is running, you can move the robot around to generate the map.  Once you are satisfied with the map, you can save the result using 
 
+`rosrun map_server map_saver -f <filename for .pgm`
 
-
-
+in another terminal
 
 
 
