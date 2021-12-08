@@ -97,7 +97,7 @@ The second way is to run the robot using the depth values generated from the Gau
 
 If no arguments are given, it will default to the first way.  Once the launch file is running, you can move the robot around to generate the map.  Once you are satisfied with the map, you can save the result using 
 
-`rosrun map_server map_saver -f <filename for .pgm`
+`rosrun map_server map_saver -f <filename for .pgm>`
 
 in another terminal
 
