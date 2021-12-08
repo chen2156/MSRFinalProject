@@ -10,7 +10,7 @@ This method involves implementing the Gaussian Process Algorithm
 ![Alt Text](20211104_112847.jpg)
 <h1> Steps Taken to do the project</h1>
 
-<h3>Hardware Setup</h3>
+<h2>Hardware Setup</h2>
 
 Turtlebot3  
 [additional waffle plate](https://www.robotis.us/tb3-waffle-plate-ipl-01-8ea/)  
@@ -20,7 +20,7 @@ Turtlebot3
 Raspberry Pi camera  
 [3D printed camera mount](raspberreypi_cameraholder.stl)
 
-<h3>Building the robot</h3>
+<h3>Building the robot</h3> 
 To build the robot, disassembled the top layer, including the LIDAR, place the Raspberry Pi camera on the second top layer such that it is centered on the robot.  Camera mount was 3D printed.  Move the USB2LDS board to the same layer as camera.  Assemble the waffle plate and attach the convex mirror to the bottom of it.  Plug Raspberry pi camera into the raspberry pi board 
 
 <h3>Testing the camera</h3>
@@ -53,10 +53,11 @@ In addition to capturing the images, I wrote [a launch file](laser_values/launch
 
 ![Alt Text](20211104_154218.jpg)  
 
-As sbown in the image, to unwarp the image, I used the OpenCV library to detect the circle of the image.  I then isolated that region and used OpenCV to determine the radius and the center of the circle.  From there, I created a R by 2 $\pi $ R, where R being the radius of the circle.  I then mapped each coordinate to each pixel value of the circle, resulting in the image shown  
+As sbown in the image, to unwarp the image, I used the OpenCV library to detect the circle of the image.  I then isolated that region and used OpenCV to determine the radius and the center of the circle.  From there, I created a R by 2 $\pi $ R, where R being the radius of the circle.  I then mapped each coordinate to each pixel value of the circle, resulting in the image shown.  
 
 
 ![Alt Text](laser_values/src/multipleImages/unWarpedImages/frame0000Unwarped.jpg)  
+The code can be run as a standalne script in this [file](laser_values/src/unwrappingimage.py)
 
 <h3>Applying PCA on the image</h3>  
 
