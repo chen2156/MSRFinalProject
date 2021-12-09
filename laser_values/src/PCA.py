@@ -37,6 +37,7 @@ def PCAImageCompression(imageFile):
 
     return imageCompressed
 
+#Code used to reduce the length of each column on the images
 def PCAImagesCompression(fileDirectory, numImages):
     
     listing = os.listdir(fileDirectory)
@@ -64,38 +65,7 @@ def PCAImagesCompression(fileDirectory, numImages):
     pca.fit(flattenedMatrix.T)
 
     finalMatrix = pca.transform(flattenedMatrix.T)
-
-
-    '''
-    for i in range(flattenedMatrix.shape[1]):
-        if i == 100:
-            break    
-        reshap = flattenedMatrix[:, i].reshape(-1, 1)
-     
-        covMatrix = np.cov(reshap)
-        
-        covMatrix = np.nan_to_num(covMatrix)
-        eigenValues, eigenVectors = np.linalg.eig(covMatrix)
-
-        idx = eigenValues.argsort()[::-1]   
-        eigenValues = eigenValues[idx]
-        eigenVectors = eigenVectors[:,idx]
-
-        featureVector = eigenVectors[:, len(eigenVectors) - 6: len(eigenVectors)]
-
-   
-
-        finalTransform = np.matmul(featureVector.T, reshap)
-
-       
-
-        if i == 0:
-            finalMatrix[:] = finalTransform
-           
-        else:
-            finalMatrix = np.hstack((finalMatrix, finalTransform))
-    '''
-    return finalMatrix
+    return finalMatrix, randomIndexes, len(listing)
 
 
 
@@ -103,19 +73,33 @@ if __name__ == "__main__":
     #NumImages = Trainingsize + 1 
     numImages = 11
     tic = time.perf_counter()
-    finalComponents = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/", numImages)
+    finalComponents, randIndex, lenX = PCAImagesCompression("/home/chen2156/laserData/src/laser_values/src/newTrainingImages/unWarpedImages/", numImages)
     toc = time.perf_counter()
     diffTime = toc - tic
     print("Time taken to run  PCA is " + str(diffTime) + " seconds")
-    ObservedData = np.loadtxt("/home/chen2156/laserData/src/laser_values/src/multipleImages/laserDataCaputer.csv", delimiter=',')
+    ObservedData = np.loadtxt("/home/chen2156/laserData/src/laser_values/src/laserDataCaputer.csv", delimiter=',')
     x = np.atleast_2d(np.linspace(0, 360, 100)).T
     kernel = RBF()
     gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=100)
-    y = np.tile(ObservedData, numImages - 1)
+    leny = len(ObservedData)
+
+   
+    #y = np.tile(ObservedData, numImages - 1)
+    y = np.array([])
+    yIndexes = []
+    for ind in range(len(randIndex)):
+        yInd  = round(leny / lenX * randIndex[ind])
+        yIndexes.append(yInd)
+        y = np.append(y, ObservedData[yInd, :])
+
     X = finalComponents[0:360 * (numImages - 1), :]
     x = finalComponents[360 * (numImages - 1):360 * numImages, :]
     tic = time.perf_counter()
+    y = y[0:360 * (numImages - 1)]
 
+    print(X.shape)
+    print(y.shape)
+    print(x.shape)
     gp.fit(X, y)
     toc = time.perf_counter()
     diffTime = toc - tic
@@ -128,7 +112,7 @@ if __name__ == "__main__":
     print("Time taken to run  Gaussian Process Predict is " + str(diffTime) + " seconds")
 
     plt.figure()
-    plt.plot(range(360), ObservedData, "r.", markersize=10, label="Observations")
+    plt.plot(range(360), ObservedData[yIndexes[-1]], "r.", markersize=10, label="Observations")
     plt.plot(range(360), y_pred, "b-", label="Prediction")
     plt.fill(
         np.concatenate([range(360), range(360)[::-1]]),
@@ -142,7 +126,7 @@ if __name__ == "__main__":
     plt.ylabel("Distance (m)")
     plt.ylim(-10, 20)
     plt.legend(loc="upper left")
-    plt.savefig("/home/chen2156/laserData/src/laser_values/src/multipleImages/10TrainingImages.png")
+    plt.savefig("/home/chen2156/laserData/src/laser_values/src/newTrainingImages/10TrainingImages.png")
     
     
 
