@@ -20,7 +20,7 @@ def unwrapImage(filePath):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # detect circles in the image
     # adjust minRadius so one circle is generated
-    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 150)
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 120)
     # ensure at least some circles were found
     if circles is not None:
 	    # convert the (x, y) coordinates and radius of the circles to integers
@@ -127,7 +127,7 @@ def unwrapImages(fileDir1, fileDir2):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # detect circles in the image
         #adjust minRadius to make sure circle is able to be generated
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 150)
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 120)
         # ensure at least some circles were found
         if circles is not None:
 	        # convert the (x, y) coordinates and radius of the circles to integers
@@ -140,9 +140,9 @@ def unwrapImages(fileDir1, fileDir2):
 		        cv2.rectangle(output, (x - 5, y - 5), (x + 5, y + 5), (0, 128, 255), -1)
 
 	    # show the output image
-        if file == "frame0200.jpg":
-            cv2.imshow("output", np.hstack([image, output]))
-            cv2.waitKey(0)
+        #if file == "frame0200.jpg":
+        #    cv2.imshow("output", np.hstack([image, output]))
+        #    cv2.waitKey(0)
 
         #Extract circle from image
         i = circles[0]
@@ -170,10 +170,11 @@ def unwrapImages(fileDir1, fileDir2):
         h = 2 * radius
         w = 2 * radius
 
+        #can be used to debug certain image frames  Uncomment to use
         # show the output image
-        if file == "frame0200.jpg":
-            cv2.imshow("output", np.hstack([image, imageCopy]))
-            cv2.waitKey(0)
+        #if file == "frame0200.jpg":
+        #    cv2.imshow("output", np.hstack([image, imageCopy]))
+        #    cv2.waitKey(0)
 
        
         #UnWarp the image
@@ -204,21 +205,22 @@ def unwrapImages(fileDir1, fileDir2):
         newUnwarpImage = cv2.remap(imageCopy, map_x, map_y, cv2.INTER_LINEAR)
 
 
-
+        #Can be used to debug certain image frames Uncomment to use
         # show the output image
-        if file == "frame0200.jpg":
-            cv2.imshow("output", newUnwarpImage)
-            cv2.waitKey(0)
+        #if file == "frame0200.jpg":
+        #    cv2.imshow("output", newUnwarpImage)
+        #    cv2.waitKey(0)
 
 
         #flip the image upside down
 
         newUnwarpImage = cv2.flip(newUnwarpImage, 0)
 
+        #can be used if notsure why output is like that
         # show the output image
-        if file == "frame0200.jpg":
-            cv2.imshow("output", newUnwarpImage)
-            cv2.waitKey(0)
+        #if file == "frame0200.jpg":
+        #    cv2.imshow("output", newUnwarpImage)
+        #    cv2.waitKey(0)
 
         imageName = file.split(".")[0]
 
@@ -226,10 +228,10 @@ def unwrapImages(fileDir1, fileDir2):
 
 if __name__ == "__main__":
     #Uncomment first two lines to test on one image
-    #filename = "/home/chen2156/laserData/src/laser_values/src/multipleImages/images/frame0200.jpg"
+    #filename = "/home/chen2156/laserData/src/laser_values/src/newTrainingImages/images/frame0275.jpg"
     #unwrapImage(filename)
 
-    fileDir1 = "/home/chen2156/laserData/src/laser_values/src/multipleImages/images/"
-    fileDir2 = "/home/chen2156/laserData/src/laser_values/src/multipleImages/unWarpedImages/"
+    fileDir1 = "/home/chen2156/laserData/src/laser_values/src/newTrainingImages/images/"
+    fileDir2 = "/home/chen2156/laserData/src/laser_values/src/newTrainingImages/unWarpedImages/"
     unwrapImages(fileDir1, fileDir2)
 

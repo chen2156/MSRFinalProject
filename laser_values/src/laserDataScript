@@ -16,7 +16,7 @@ def scan_callback(msg):
 
     strRange = [str(x) for x in msg.ranges]
     rangeStr = ",".join(strRange) + "\n"
-    file1 = open("/home/chen2156/laserData/src/laser_values/src/laserDataCaputer.txt","a")
+    file1 = open("/home/chen2156/laserData/src/laser_values/src/laserDataCaputer.csv","a")
     file1.write(rangeStr)
     file1.close()
 #END MEASUREMENT  

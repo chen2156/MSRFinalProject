@@ -98,7 +98,7 @@ class ImageProcess:
         gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
         # detect circles in the image
         # adjust minRadius so one circle is generated
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 150)
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.2, 100, minRadius = 120)
         # ensure at least some circles were found
         if circles is not None:
 	        # convert the (x, y) coordinates and radius of the circles to integers
@@ -170,7 +170,7 @@ class ImageProcess:
     #Decrease the dimension of image from 420 to 6
     def PCAImageCompression(self):
         rospy.loginfo("PCAImageCompression")
-        resized = cv2.resize(self.image, (360, 140), interpolation=cv2.INTER_LINEAR)
+        resized = cv2.resize(self.image, (72, 140), interpolation=cv2.INTER_LINEAR)
         resized = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
         H, S, V = cv2.split(resized)
         scaledH = H / 180
@@ -191,23 +191,26 @@ class ImageProcess:
     #Run a saved Gaussian Process Model
     def GaussianProcess(self):
         rospy.loginfo("Gaussian Process Model")
-        #GaussianProcessModel = joblib.load("/home/chen2156/laserData/src/laser_values/src/10ImageGaussianProcessModel.sav")
-        predictions = []
-        sigmas = []
-        for model in self.model:
-            y_pred, sigma = model.predict(self.matrix, return_std=True)
-            predictions.append(y_pred)
-            sigmas.append(sigma) 
-        finalPredictions = []
-        for c in range(360):
-            minSig = sigmas[0][c]
-            minIndex = 0
-            for sig in range(1, len(sigmas)):
-                if sigmas[sig][c] < minSig:
-                    minSig = sigmas[sig][c]
-                    minIndex = sig
-            finalPredictions.append(y_pred[minIndex][c])
+        GaussianProcessModel = joblib.load("/home/chen2156/laserData/src/laser_values/src/200ImagesGaussianProcessModel.sav")
+        #predictions = []
+        #sigmas = []
+        #for model in self.model:
+        #    y_pred, sigma = model.predict(self.matrix, return_std=True)
+        #    predictions.append(y_pred)
+        #    sigmas.append(sigma) 
+        #finalPredictions = []
+        #for c in range(360):
+        #    minSig = sigmas[0][c]
+        #    minIndex = 0
+        #    for sig in range(1, len(sigmas)):
+        #        if sigmas[sig][c] < minSig:
+        ##            minSig = sigmas[sig][c]
+         #           minIndex = sig
+         #   finalPredictions.append(y_pred[minIndex][c])
 
+        y_pred, sigma = GaussianProcessModel.predict(self.matrix, return_std=True)
+        #use this to scale up the prediction resolution
+        finalPredictions = np.repeat(y_pred, 5)
         scan = LaserScan()
 
         scan.header.stamp = rospy.Time.now()
