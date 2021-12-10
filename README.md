@@ -21,14 +21,16 @@ Raspberry Pi camera
 [3D printed camera mount](raspberreypi_cameraholder.stl)
 
 <h3>Building the robot</h3> 
-To build the robot, disassembled the top layer, including the LIDAR, place the Raspberry Pi camera on the second top layer such that it is centered on the robot.  Camera mount was 3D printed.  Move the USB2LDS board to the same layer as camera.  Assemble the waffle plate and attach the convex mirror to the bottom of it.  Plug Raspberry pi camera into the raspberry pi board 
+To build the robot, disassembled the top layer, including the LIDAR, place the Raspberry Pi camera on the second top layer such that it is centered on the robot.  3D print the camera mount and attach it to the second top layer.  Mount raspberry pi camera on it.  Move the USB2LDS board to the same layer as camera.  Assemble the waffle plate and attach the convex mirror to the bottom of it.  Plug Raspberry pi camera into the raspberry pi board 
 
 <h3>Testing the camera</h3>
-Turn on the raspberry pi camera by ssh into the robot.  After I sshed into the robot and ran:  
+Turn on the raspberry pi camera by ssh into the robot.  After sshed into the robot run:  
 
  `rosrun usb_cam usb_cam_node _pixel_format:=yuyv` 
 
-In another tab I ran `rqt_image_view` to check if the camera was working.  The camera should publish to `/usb_cam/image_view` topic.  
+In another tab I ran `rqt_image_view` to check if the camera was working.  The camera should publish to the  `/usb_cam/image_view` topic.  If the camera doesn't turn on, change the permissions by running  
+
+`sudo chmod 777 /dev/video0`  
 
 <h3>Finish Assembly</h3>  
 After checking that the camera works.  Add spacers and calibrate the camera such that the camera can clearly film the mirror's reflection of the robot's surrounding clearly  Reassemble the LIDAR system back to the robot.  The data generated from the LIDAR system will be used as the ground truth camera
@@ -41,13 +43,21 @@ After system is set up, record a bag file of the camera
 
 `rosbag record -O <name of rosbag file> /usb_cam/image_view /scan`
 
-After recording the bag file, I wrote [a launch file](laser_values/src/multipleImages/export.launch) that would export the images from the bag file and save it to a hidden folder named .ros in the home directory.  To run this, you can do `roslaunch laser_values export.launch`  You can copy the files from the folder to whatever folder you would like by running `mv ~/.ros/frame*.jpg <dest folder>`
+After recording the bag file, Run [this launch file](laser_values/src/multipleImages/export.launch) that would export the images from the bag file and save it to a hidden folder named .ros in the home directory.  To run this, you can do  
+
+ `roslaunch laser_values export.launch` 
+ 
+ You can copy the files from the folder to whatever folder you would like by running  
+ 
+`mv ~/.ros/frame*.jpg <dest folder>`  
 Example of image generated:  
 ![Alt Text](laser_values/src/newTrainingImages/images/frame0000.jpg)  
 
 <h3>Generating the LIDAR data</h3>
 
-In addition to capturing the images, I wrote [a launch file](laser_values/launch/laserScan.launch).  This allows the LIDAR data to be saved into a csv file, which would eventually be used to train the Gaussian Process Model.  To run the file, you can do `roslaunch laser_values laserScan.launch`
+In addition to capturing the images, Run [this launch file](laser_values/launch/laserScan.launch).  This allows the LIDAR data to be saved into a csv file, which would eventually be used to train the Gaussian Process Model as the observed data.  To run the file, you can do   
+
+`roslaunch laser_values laserScan.launch`
 
 <h3>Unwarping the Images</h3>  
 
@@ -56,8 +66,11 @@ In addition to capturing the images, I wrote [a launch file](laser_values/launch
 As sbown in the image, to unwarp the image, I used the OpenCV library to detect the circle of the image.  I then isolated that region and used OpenCV to determine the radius and the center of the circle.  From there, I created a R by 2 $\pi $ R, where R being the radius of the circle.  I then mapped each coordinate to each pixel value of the circle, resulting in the image shown.  
 
 
-![Alt Text](laser_values/src/newTrainingImages/unWarpedImages/frame0000Unwarped.jpg)  
-The code can be run as a standalone script in this [file](laser_values/src/unwrappingimage.py)
+![Alt Text](laser_values/src/newTrainingImages/unWarpedImages/frame0000Unwarped.jpg)
+
+The code can be run as a standalone script in this [file](laser_values/src/unwrappingimage.py)  
+
+`python3 unwrappingimage.py`  
 
 <h3>Applying PCA on the image</h3>  
 
@@ -72,11 +85,11 @@ Once the image columns have been reduced, I input them with the corresponding di
 
 in the terminal.
 
-<h2> Testing the Gaussian Model with the raspberrypi camera</h2>  
+<h2> Deploying the model</h2>  
 
 <h3>Running the algorithm with the robot</h3> 
 
-To run the Gaussian Process Model with the robot.  I first started roscore on the local computer, Then in a new tab sshed into the robot using
+To run the Gaussian Process Model with the robot, start roscore on the local computer, Then in a new tab sshed into the robot using
 
 `ssh -o SendEnv=ROS_MASTER_URI msr@gauss` 
 
@@ -86,8 +99,8 @@ This will prompt for a password.  If you failed to connect to the robot due to i
 Once in the turtlebot, set the permission of the camera by doing 
 `sudo chmod 777 /dev/video0` 
 
-Once the permissions was set, open a new tab to run the turtlebot with the camera.  There are two ways to run the robot.  Both allow you to run SLAM while controlling the robot using WASD keys
-The first way is to run the robot with LIDAR:  
+Once the permissions was set, open a new tab to run the turtlebot with the camera.  There are two ways to run the robot.  Both allow you to run SLAM while controlling the robot using WASD keys(teleopperation keys)  
+The first way is to run the robot with LIDAR without the Gaussian Process Model running:  
 
 `roslaunch laser_values cameraLaunch.launch runLidar:=true runGaussProc:=false`
 
@@ -95,11 +108,14 @@ The second way is to run the robot using the depth values generated from the Gau
 
 `roslaunch laser_values cameraLaunch.launch runLidar:=false runGaussProc:=true`  
 
-If no arguments are given, it will default to the first way.  Once the launch file is running, you can move the robot around to generate the map.  Once you are satisfied with the map, you can save the result using 
+If no arguments are given, it will default to the first way.  Once the launch file is running, you can move the robot around to generate the map.  Once you are satisfied with the map, you can save the result locally using 
 
 `rosrun map_server map_saver -f <filename for .pgm>`
 
-in another terminal
+in another tab
 
+<h2> Testing the results</h2>  
+
+Testing the results is more down to visual inspection by comparing how the maps generated by the LIDAR stack up against the one generated by the Gaussian Process model.  Should expect a map from the Gaussian Process to have  
 
 
