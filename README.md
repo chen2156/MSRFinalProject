@@ -57,7 +57,7 @@ As sbown in the image, to unwarp the image, I used the OpenCV library to detect 
 
 
 ![Alt Text](laser_values/src/newTrainingImages/unWarpedImages/frame0000Unwarped.jpg)  
-The code can be run as a standalne script in this [file](laser_values/src/unwrappingimage.py)
+The code can be run as a standalone script in this [file](laser_values/src/unwrappingimage.py)
 
 <h3>Applying PCA on the image</h3>  
 
