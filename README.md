@@ -35,15 +35,15 @@ After checking that the camera works.  Add spacers and calibrate the camera such
 
 <h2>Training the machine learning model<h2> 
 
-<h3>Capure a dataset of images</h3>  
+<h3>Capure a dataset of images and LIDAR scans</h3>  
 
 After system is set up, record a bag file of the camera 
 
-`rosbag record -O subset /usb_cam/image_view`
+`rosbag record -O <name of rosbag file> /usb_cam/image_view /scan`
 
 After recording the bag file, I wrote [a launch file](laser_values/src/multipleImages/export.launch) that would export the images from the bag file and save it to a hidden folder named .ros in the home directory.  To run this, you can do `roslaunch laser_values export.launch`  You can copy the files from the folder to whatever folder you would like by running `mv ~/.ros/frame*.jpg <dest folder>`
 Example of image generated:  
-![Alt Text](laser_values/src/multipleImages/images/frame0000.jpg)  
+![Alt Text](laser_values/src/newTrainingImages/images/frame0000.jpg)  
 
 <h3>Generating the LIDAR data</h3>
 
@@ -56,7 +56,7 @@ In addition to capturing the images, I wrote [a launch file](laser_values/launch
 As sbown in the image, to unwarp the image, I used the OpenCV library to detect the circle of the image.  I then isolated that region and used OpenCV to determine the radius and the center of the circle.  From there, I created a R by 2 $\pi $ R, where R being the radius of the circle.  I then mapped each coordinate to each pixel value of the circle, resulting in the image shown.  
 
 
-![Alt Text](laser_values/src/multipleImages/unWarpedImages/frame0000Unwarped.jpg)  
+![Alt Text](laser_values/src/newTrainingImages/unWarpedImages/frame0000Unwarped.jpg)  
 The code can be run as a standalne script in this [file](laser_values/src/unwrappingimage.py)
 
 <h3>Applying PCA on the image</h3>  
